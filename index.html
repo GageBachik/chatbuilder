@@ -1,0 +1,97 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Chatbuilder</title>
+    <script src="http://chatbuilder.hackreactor.com/ChatBuilder.js"></script>
+</head>
+<body>
+
+<script>
+
+ $(function(){
+     delete Chat.display;
+     delete Chat.fetch;
+     delete Chat.send;
+    Chat.display = function(message){
+        return "<li>"+message+"</li>";
+    };
+
+    Chat.fetch = function(callback){
+        $.ajax({
+            url: 'https://api.parse.com/1/classes/chats',
+            data: {order:"createdAt"},
+            dataType: 'JSON',
+            type: 'GET',
+            success: function(response){
+                var messages = [];
+                response.results.map(function(index){
+                    messages.push(index.text);
+                });
+                if (messages.length > 10){
+                    messages.shift();
+                }
+                callback(messages);
+            }
+        });
+    };
+
+    Chat.send = function(message){
+        var username = document.URL.split('=').pop();
+        var jsonMessage = JSON.stringify({"text":(username + ": " + message)});
+        $.ajax({
+            url: 'https://api.parse.com/1/classes/chats',
+            data: jsonMessage,
+            dataType: 'JSON',
+            type: 'POST',
+            success: function(response){
+                console.log(response);
+            }
+        });
+    };
+
+    function updateMessage(){
+        var results = [];
+        Chat.fetch(function(messages){
+            messages.map(function(index){
+                results.push(Chat.display(index));
+            });
+            $('.messages').html(results.join(''));
+        });
+        setTimeout(updateMessage,3000);
+    }
+
+        updateMessage();
+
+     function sendMessage(){
+         var getPut = $('.draft');
+         Chat.send(getPut.val());
+         getPut.val('');
+     }
+
+
+    $('button').on('click', function(){
+       sendMessage();
+    });
+
+     $('.draft').bind('keypress', function(e) {
+         if(e.keyCode==13){
+             sendMessage();
+         }
+     });
+
+ });
+
+</script>
+
+<h2>Borken Chat</h2>
+
+<input class="draft" type="text"/> <button class="send">Send</button>
+
+<ul class="messages">
+
+</ul>
+
+</body>
+</html>
